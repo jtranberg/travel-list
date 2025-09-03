@@ -3,9 +3,8 @@ import { styles } from "./styles/styles.js";
 
 /**
  * Travel Checklist App – React (no Tailwind)
- * Drop this file in a Vite project as src/App.jsx and wire up in src/main.jsx.
  * Features:
- * - Preloaded sections (Vehicle, Packing, Documents, Electronics, Emergency)
+ * - Preloaded sections (Vehicle, Cat, Packing, Documents, Electronics, Emergency)
  * - Add/edit/delete items & sections
  * - Check/uncheck, clear checks, section-level toggle
  * - Filter/search across all items
@@ -15,6 +14,20 @@ import { styles } from "./styles/styles.js";
  */
 
 const LS_KEY = "travel-checklist-v1";
+const CAT_TITLE = "Cat — meds & supplies";
+const CAT_ITEMS = [
+  "Case of food",
+  "Liquid pred",
+  "Inhaler (daily)",
+  "Inhaler (rescue)",
+  "Litter box",
+  "Litter",
+  "Zylkene med",
+  "2 syringes",
+  "Dilator pills",
+  "Tablet pred",
+  "Water",
+];
 
 function uid(prefix = "id") {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -41,23 +54,10 @@ const TEMPLATE = [
     ].map((t) => ({ id: uid("it"), text: t, done: false })),
   },
   {
-  id: uid("sec"),
-  title: "Cat — meds & supplies",
-  items: [
-    "Case of food",
-    "Liquid pred",
-    "Inhaler (daily)",
-    "Inhaler (rescue)",
-    "Litter box",
-    "Litter",
-    "Zylkene med",
-    "2 syringes",
-    "Dilator pills",
-    "Tablet pred",
-    "Water",
-  ].map((t) => ({ id: uid("it"), text: t, done: false })),
-},
-
+    id: uid("sec"),
+    title: CAT_TITLE,
+    items: CAT_ITEMS.map((t) => ({ id: uid("it"), text: t, done: false })),
+  },
   {
     id: uid("sec"),
     title: "Packing",
@@ -107,18 +107,31 @@ const TEMPLATE = [
   },
 ];
 
+// Ensure saved data includes the Cat section (non-destructive migration)
+function ensureCatSection(list) {
+  if (!Array.isArray(list)) return TEMPLATE;
+  const hasCat = list.some((s) => s.title === CAT_TITLE);
+  if (hasCat) return list;
+  const catSection = {
+    id: uid("sec"),
+    title: CAT_TITLE,
+    items: CAT_ITEMS.map((t) => ({ id: uid("it"), text: t, done: false })),
+  };
+  return [...list, catSection];
+}
+
 export default function App() {
   const [sections, setSections] = useState(() => {
     try {
       const raw = localStorage.getItem(LS_KEY);
-      return raw ? JSON.parse(raw) : TEMPLATE;
+      const initial = raw ? JSON.parse(raw) : TEMPLATE;
+      return ensureCatSection(initial);
     } catch {
-      alert("Could not import this file.");
+      return TEMPLATE;
     }
   });
   const [filter, setFilter] = useState("");
   const [addingSection, setAddingSection] = useState(false);
-  
 
   useEffect(() => {
     localStorage.setItem(LS_KEY, JSON.stringify(sections));
@@ -138,10 +151,7 @@ export default function App() {
   function addSection(title) {
     const t = title?.trim();
     if (!t) return;
-    setSections((prev) => [
-      ...prev,
-      { id: uid("sec"), title: t, items: [] },
-    ]);
+    setSections((prev) => [...prev, { id: uid("sec"), title: t, items: [] }]);
   }
 
   function addItem(sectionId, text) {
@@ -224,10 +234,12 @@ export default function App() {
   }
 
   function clearAllChecks() {
-    setSections((prev) => prev.map((s) => ({
-      ...s,
-      items: s.items.map((it) => ({ ...it, done: false })),
-    })));
+    setSections((prev) =>
+      prev.map((s) => ({
+        ...s,
+        items: s.items.map((it) => ({ ...it, done: false })),
+      }))
+    );
   }
 
   function resetTemplate() {
@@ -242,7 +254,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `travel-checklist-${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `travel-checklist-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -252,7 +264,7 @@ export default function App() {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const data = JSON.parse(reader.result);
+        const data = JSON.parse(String(reader.result));
         if (!Array.isArray(data)) throw new Error("Invalid file");
         // light validation
         const normalized = data.map((s) => ({
@@ -266,14 +278,13 @@ export default function App() {
               }))
             : [],
         }));
-        setSections(normalized);
+        setSections(ensureCatSection(normalized));
       } catch {
         alert("Could not import this file.");
       }
     };
     reader.readAsText(file);
   }
-
 
   return (
     <div style={styles.page}>
@@ -302,7 +313,14 @@ export default function App() {
             <button style={{ ...styles.button }} onClick={exportJSON}>
               Export
             </button>
-            <label style={{ ...styles.button, display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <label
+              style={{
+                ...styles.button,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
               Import
               <input
                 type="file"
@@ -358,32 +376,69 @@ function InlineAddSection({ onCancel, onAdd }) {
   useEffect(() => inputRef.current?.focus(), []);
 
   return (
-    <div style={{
-      maxWidth: 980,
-      margin: "0 auto 16px",
-      padding: 12,
-      background: "#fff",
-      border: "1px solid #e5e7eb",
-      borderRadius: 12,
-      display: "flex",
-      gap: 8,
-      alignItems: "center",
-    }}>
+    <div
+      style={{
+        maxWidth: 980,
+        margin: "0 auto 16px",
+        padding: 12,
+        background: "#fff",
+        border: "1px solid #e5e7eb",
+        borderRadius: 12,
+        display: "flex",
+        gap: 8,
+        alignItems: "center",
+      }}
+    >
       <input
         ref={inputRef}
         placeholder="New section title…"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && onAdd(title)}
-        style={{ flex: 1, padding: "8px 10px", border: "1px solid #e5e7eb", borderRadius: 8 }}
+        style={{
+          flex: 1,
+          padding: "8px 10px",
+          border: "1px solid #e5e7eb",
+          borderRadius: 8,
+        }}
       />
-      <button onClick={() => onAdd(title)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #d1d5db", background: "#2563eb", color: "#fff" }}>Add</button>
-      <button onClick={onCancel} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff" }}>Cancel</button>
+      <button
+        onClick={() => onAdd(title)}
+        style={{
+          padding: "8px 12px",
+          borderRadius: 8,
+          border: "1px solid #d1d5db",
+          background: "#2563eb",
+          color: "#fff",
+        }}
+      >
+        Add
+      </button>
+      <button
+        onClick={onCancel}
+        style={{
+          padding: "8px 12px",
+          borderRadius: 8,
+          border: "1px solid #d1d5db",
+          background: "#fff",
+        }}
+      >
+        Cancel
+      </button>
     </div>
   );
 }
 
-function SectionCard({ section, onAddItem, onToggle, onDeleteItem, onEditItem, onDeleteSection, onRenameSection, onToggleAll }) {
+function SectionCard({
+  section,
+  onAddItem,
+  onToggle,
+  onDeleteItem,
+  onEditItem,
+  onDeleteSection,
+  onRenameSection,
+  onToggleAll,
+}) {
   const [adding, setAdding] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [newItem, setNewItem] = useState("");
@@ -394,7 +449,8 @@ function SectionCard({ section, onAddItem, onToggle, onDeleteItem, onEditItem, o
   }, [adding]);
 
   const doneCount = section.items.filter((i) => i.done).length;
-  const allChecked = section.items.length > 0 && doneCount === section.items.length;
+  const allChecked =
+    section.items.length > 0 && doneCount === section.items.length;
 
   return (
     <section style={styles.card}>
@@ -418,19 +474,38 @@ function SectionCard({ section, onAddItem, onToggle, onDeleteItem, onEditItem, o
         ) : (
           <h2 style={styles.cardTitle}>
             {section.title}
-            <span style={{ fontWeight: 500, marginLeft: 8, color: "#6b7280", fontSize: 12 }}>
+            <span
+              style={{
+                fontWeight: 500,
+                marginLeft: 8,
+                color: "#6b7280",
+                fontSize: 12,
+              }}
+            >
               {doneCount}/{section.items.length}
             </span>
           </h2>
         )}
         <div style={{ display: "flex", gap: 6 }}>
-          <button title="Toggle all" style={styles.button} onClick={() => onToggleAll(!allChecked)}>
+          <button
+            title="Toggle all"
+            style={styles.button}
+            onClick={() => onToggleAll(!allChecked)}
+          >
             {allChecked ? "Uncheck all" : "Check all"}
           </button>
-          <button title="Rename" style={styles.button} onClick={() => setEditingTitle(true)}>
+          <button
+            title="Rename"
+            style={styles.button}
+            onClick={() => setEditingTitle(true)}
+          >
             Rename
           </button>
-          <button title="Delete section" style={{ ...styles.button, ...styles.danger }} onClick={onDeleteSection}>
+          <button
+            title="Delete section"
+            style={{ ...styles.button, ...styles.danger }}
+            onClick={onDeleteSection}
+          >
             Delete
           </button>
         </div>
@@ -464,13 +539,25 @@ function SectionCard({ section, onAddItem, onToggle, onDeleteItem, onEditItem, o
             }}
             style={styles.input}
           />
-          <button style={{ ...styles.button, ...styles.primary }} onClick={() => { onAddItem(newItem); setNewItem(""); inputRef.current?.focus(); }}>
+          <button
+            style={{ ...styles.button, ...styles.primary }}
+            onClick={() => {
+              onAddItem(newItem);
+              setNewItem("");
+              inputRef.current?.focus();
+            }}
+          >
             Add
           </button>
-          <button style={styles.button} onClick={() => setAdding(false)}>Done</button>
+          <button style={styles.button} onClick={() => setAdding(false)}>
+            Done
+          </button>
         </div>
       ) : (
-        <button style={{ ...styles.button, marginTop: 8 }} onClick={() => setAdding(true)}>
+        <button
+          style={{ ...styles.button, marginTop: 8 }}
+          onClick={() => setAdding(true)}
+        >
           + Add item
         </button>
       )}
@@ -511,7 +598,10 @@ function ItemRow({ item, onToggle, onDelete, onEdit }) {
           style={{ ...styles.input, ...styles.itemText(item.done) }}
         />
       ) : (
-        <label style={styles.itemText(item.done)} onDoubleClick={() => setEditing(true)}>
+        <label
+          style={styles.itemText(item.done)}
+          onDoubleClick={() => setEditing(true)}
+        >
           {item.text}
         </label>
       )}
@@ -519,7 +609,11 @@ function ItemRow({ item, onToggle, onDelete, onEdit }) {
         <button title="Edit" style={styles.button} onClick={() => setEditing(true)}>
           Edit
         </button>
-        <button title="Delete" style={{ ...styles.button, ...{ borderColor: "#fca5a5", color: "#b91c1c" } }} onClick={onDelete}>
+        <button
+          title="Delete"
+          style={{ ...styles.button, ...{ borderColor: "#fca5a5", color: "#b91c1c" } }}
+          onClick={onDelete}
+        >
           ✕
         </button>
       </div>
