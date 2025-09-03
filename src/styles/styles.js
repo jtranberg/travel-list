@@ -1,0 +1,87 @@
+// src/styles.js
+export const styles = {
+  page: {
+    fontFamily:
+      "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+    background: "#f6f7f9",
+    color: "#111827",
+    minHeight: "100vh",
+  },
+  container: {
+    maxWidth: 980,
+    margin: "0 auto",
+    padding: "24px 16px 64px",
+  },
+  header: {
+    display: "flex",
+    gap: 12,
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  title: { fontSize: 24, fontWeight: 800, letterSpacing: -0.25 },
+  toolbar: { display: "flex", gap: 8, flexWrap: "wrap" },
+  search: {
+    padding: "8px 12px",
+    border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    minWidth: 220,
+    background: "#fff",
+  },
+  button: {
+    padding: "8px 12px",
+    borderRadius: 8,
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    cursor: "pointer",
+  },
+  primary: { background: "#2563eb", color: "#fff", borderColor: "#1d4ed8" },
+  danger: { background: "#ef4444", color: "#fff", borderColor: "#dc2626" },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+    gap: 16,
+  },
+  card: {
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 12,
+    padding: 14,
+    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+  },
+  cardHeader: {
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  cardTitle: { fontWeight: 700 },
+  input: {
+    width: "100%",
+    padding: "8px 10px",
+    borderRadius: 8,
+    border: "1px solid #e5e7eb",
+    background: "#fff",
+  },
+  itemRow: {
+    display: "grid",
+    gridTemplateColumns: "24px 1fr auto",
+    alignItems: "center",
+    gap: 8,
+    padding: "6px 0",
+  },
+  itemText: (done) => ({
+    textDecoration: done ? "line-through" : "none",
+    color: done ? "#6b7280" : "inherit",
+    wordBreak: "break-word",
+    lineHeight: 1.35,
+  }),
+  itemActions: { display: "flex", gap: 6 },
+  footer: {
+    marginTop: 24,
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: 12,
+  },
+};
