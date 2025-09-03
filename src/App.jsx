@@ -41,6 +41,24 @@ const TEMPLATE = [
     ].map((t) => ({ id: uid("it"), text: t, done: false })),
   },
   {
+  id: uid("sec"),
+  title: "Cat — meds & supplies",
+  items: [
+    "Case of food",
+    "Liquid pred",
+    "Inhaler (daily)",
+    "Inhaler (rescue)",
+    "Litter box",
+    "Litter",
+    "Zylkene med",
+    "2 syringes",
+    "Dilator pills",
+    "Tablet pred",
+    "Water",
+  ].map((t) => ({ id: uid("it"), text: t, done: false })),
+},
+
+  {
     id: uid("sec"),
     title: "Packing",
     items: [
