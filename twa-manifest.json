@@ -26,11 +26,7 @@
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://mobile-travel-list.netlify.app/manifest.webmanifest",
   "fallbackType": "customtabs",
-  "features": {
-    "locationDelegation": {
-      "enabled": true
-    }
-  },
+  "features": {},
   "alphaDependencies": {
     "enabled": false
   },
