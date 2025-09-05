@@ -1,24 +1,83 @@
-# Logs
-logs
-*.log
+# ─────────────────────────
+# Node / package managers
+# ─────────────────────────
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Keep your lockfile! (don’t ignore package-lock.json / yarn.lock / pnpm-lock.yaml)
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# ─────────────────────────
+# Build outputs / caches
+# ─────────────────────────
+dist/
+build/
+.cache/
+.tmp/
+.temp/
+.eslintcache
+.parcel-cache/
+.vite/
+vite.config.local.*
+
+
+# ─────────────────────────
+# Tests / coverage
+# ─────────────────────────
+coverage/
+*.lcov
+
+# ─────────────────────────
+# Environment files
+# (commit only .env.example placeholders)
+# ─────────────────────────
+.env
+.env.*
+!.env.example
+# If you WANT to commit target files, uncomment these:
+# !.env.web
+# !.env.play
+
+# ─────────────────────────
+# Editors / OS junk
+# ─────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+
+# ─────────────────────────
+# Netlify / Vercel
+# ─────────────────────────
+.netlify/
+.vercel/
+
+# ─────────────────────────
+# Android / Bubblewrap (TWA)
+# Ignore generated Android project & signing artifacts
+# ─────────────────────────
+android/
+*.keystore
+*.jks
+upload.keystore
+*.pem
+*.aab
+*.apk
+
+# ─────────────────────────
+# Storybook / static exports (optional)
+# ─────────────────────────
+storybook-static/
+out/
+
+# ─────────────────────────
+# Logs (general)
+# ─────────────────────────
+logs/
+*.log
+logs/*.log
