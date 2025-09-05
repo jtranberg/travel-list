@@ -1,0 +1,17 @@
+[build]
+  # For the web site; override per-site in Netlify UI for the Play site
+  command = "npm run build:web"
+  publish = "dist"
+
+# SPA fallback so React routes don’t 404
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Make sure assetlinks.json serves with the right content-type
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json; charset=utf-8"
+    Cache-Control = "public, max-age=300"

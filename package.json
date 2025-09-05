@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "build:web": "vite build --mode web",
+    "build:play": "vite build --mode play",
+    "preview:web": "vite preview --mode web",
+    "preview:play": "vite preview --mode play"
   },
   "dependencies": {
     "react": "^19.1.1",

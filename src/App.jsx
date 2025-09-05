@@ -1,140 +1,28 @@
+// src/App.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { styles } from "./styles/styles.js";
+import { uid } from "./lib/ids.js";
+import {
+  LS_KEY,
+  loadInitialSections,
+  saveSections,
+  instantiateTemplate,
+  normalizeList,
+} from "./lib/storage.js";
 
-/**
- * Travel Checklist App – React (no Tailwind)
- * Features:
- * - Preloaded sections (Vehicle, Cat, Packing, Documents, Electronics, Emergency)
- * - Add/edit/delete items & sections
- * - Check/uncheck, clear checks, section-level toggle
- * - Filter/search across all items
- * - Persist to localStorage
- * - Export / Import JSON
- * - Print-friendly layout
- */
+import { readOpfsJson, writeOpfsJson } from "./lib/opfs.js";
 
-const LS_KEY = "travel-checklist-v1";
-const CAT_TITLE = "Cat — meds & supplies";
-const CAT_ITEMS = [
-  "Case of food",
-  "Liquid pred",
-  "Inhaler (daily)",
-  "Inhaler (rescue)",
-  "Litter box",
-  "Litter",
-  "Zylkene med",
-  "2 syringes",
-  "Dilator pills",
-  "Tablet pred",
-  "Water",
-];
-
-function uid(prefix = "id") {
-  return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-const TEMPLATE = [
-  {
-    id: uid("sec"),
-    title: "Vehicle Checklist",
-    items: [
-      "Engine oil level",
-      "Tire pressure (incl. spare)",
-      "Tire tread & wear",
-      "Brakes responsive / pads ok",
-      "Coolant level",
-      "Windshield washer fluid",
-      "Wipers condition",
-      "Headlights / signals / brake lights",
-      "Battery terminals clean & tight",
-      "Jack, wrench, wheel lock key",
-      "Insurance & registration",
-      "Roadside assistance card/app",
-      "Emergency triangle / flares",
-    ].map((t) => ({ id: uid("it"), text: t, done: false })),
-  },
-  {
-    id: uid("sec"),
-    title: CAT_TITLE,
-    items: CAT_ITEMS.map((t) => ({ id: uid("it"), text: t, done: false })),
-  },
-  {
-    id: uid("sec"),
-    title: "Packing",
-    items: [
-      "Clothes (weather-appropriate)",
-      "Toiletries",
-      "Medications",
-      "Snacks",
-      "Water bottle / jug",
-      "Sunglasses / hat",
-      "Travel pillow / blanket",
-      "First-aid kit",
-    ].map((t) => ({ id: uid("it"), text: t, done: false })),
-  },
-  {
-    id: uid("sec"),
-    title: "Documents",
-    items: [
-      "Driver’s license / ID",
-      "Passport (if needed)",
-      "Itinerary / reservations",
-      "Credit card & some cash",
-      "Car manual & spare key",
-    ].map((t) => ({ id: uid("it"), text: t, done: false })),
-  },
-  {
-    id: uid("sec"),
-    title: "Electronics",
-    items: [
-      "Phone + charger",
-      "Car charger / USB adapter",
-      "Dash cam / SD card",
-      "Power bank",
-    ].map((t) => ({ id: uid("it"), text: t, done: false })),
-  },
-  {
-    id: uid("sec"),
-    title: "Emergency",
-    items: [
-      "Spare tire / sealant",
-      "Jumper cables",
-      "Work gloves",
-      "Flashlight",
-      "Blanket / warm layer",
-      "Multi-tool",
-    ].map((t) => ({ id: uid("it"), text: t, done: false })),
-  },
-];
-
-// Ensure saved data includes the Cat section (non-destructive migration)
-function ensureCatSection(list) {
-  if (!Array.isArray(list)) return TEMPLATE;
-  const hasCat = list.some((s) => s.title === CAT_TITLE);
-  if (hasCat) return list;
-  const catSection = {
-    id: uid("sec"),
-    title: CAT_TITLE,
-    items: CAT_ITEMS.map((t) => ({ id: uid("it"), text: t, done: false })),
-  };
-  return [...list, catSection];
-}
+// Simple feature check for File System Access API
+const supportsFS = () =>
+  "showSaveFilePicker" in window && "showOpenFilePicker" in window;
 
 export default function App() {
-  const [sections, setSections] = useState(() => {
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      const initial = raw ? JSON.parse(raw) : TEMPLATE;
-      return ensureCatSection(initial);
-    } catch {
-      return TEMPLATE;
-    }
-  });
+  const [sections, setSections] = useState(() => loadInitialSections());
   const [filter, setFilter] = useState("");
   const [addingSection, setAddingSection] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify(sections));
+    saveSections(sections);
   }, [sections]);
 
   const filtered = useMemo(() => {
@@ -147,6 +35,100 @@ export default function App() {
       }))
       .filter((s) => s.items.length > 0);
   }, [sections, filter]);
+
+  // After your state is created:
+  useEffect(() => {
+    // On first run: if OPFS has data, prefer it; else seed OPFS from current sections
+    (async () => {
+      const opfsData = await readOpfsJson();
+      if (opfsData && Array.isArray(opfsData)) {
+        setSections(opfsData);
+      } else {
+        await writeOpfsJson(sections);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep OPFS in sync whenever sections change
+  useEffect(() => {
+    (async () => {
+      await writeOpfsJson(sections);
+    })();
+  }, [sections]);
+
+  // One-click full reset to the standard template
+  function resetAppData() {
+    try {
+      localStorage.removeItem(LS_KEY);
+    } catch (err) {
+      // Non-fatal: localStorage may be unavailable (private mode, blocked, etc.)
+      console.warn("Could not clear localStorage:", err);
+    }
+
+    setFilter("");
+    const fresh = instantiateTemplate();
+    setSections(fresh);
+
+    // Keep OPFS in sync (don't block UI; ignore failures)
+    writeOpfsJson(fresh).catch((e) => {
+      console.warn("OPFS write failed:", e);
+    });
+  }
+
+  // Save current list to a user-picked file on the phone
+  async function saveToPhone() {
+    if (!supportsFS()) {
+      exportJSON();
+      return;
+    } // fallback
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: "travel-checklist.json",
+        types: [
+          { description: "JSON", accept: { "application/json": [".json"] } },
+        ],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(
+        new Blob([JSON.stringify(sections, null, 2)], {
+          type: "application/json",
+        })
+      );
+      await writable.close();
+      alert("Saved to phone ✔");
+    } catch (e) {
+      // user cancelled or error
+      if (e?.name !== "AbortError") alert("Save failed");
+    }
+  }
+
+  // Open a JSON file from the phone and load it
+  async function openFromPhoneAndLoad() {
+    if (!supportsFS()) {
+      alert(
+        "Your browser doesn’t support direct file access. Use Import instead."
+      );
+      return;
+    }
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [
+          { description: "JSON", accept: { "application/json": [".json"] } },
+        ],
+        multiple: false,
+      });
+      const file = await handle.getFile();
+      const text = await file.text();
+      const data = JSON.parse(text);
+      setSections(normalizeList(data));
+      // keep OPFS in sync (optional)
+      writeOpfsJson(normalizeList(data));
+      alert("Loaded from phone ✔");
+    } catch (e) {
+      if (e?.name !== "AbortError") alert("Open failed");
+    }
+  }
 
   function addSection(title) {
     const t = title?.trim();
@@ -243,8 +225,9 @@ export default function App() {
   }
 
   function resetTemplate() {
-    if (!confirm("Replace your current list with the template?")) return;
-    setSections(TEMPLATE);
+    if (!confirm("Replace your current list with the default template?"))
+      return;
+    setSections(instantiateTemplate());
   }
 
   function exportJSON() {
@@ -254,7 +237,9 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `travel-checklist-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `travel-checklist-${new Date()
+      .toISOString()
+      .slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -266,19 +251,7 @@ export default function App() {
       try {
         const data = JSON.parse(String(reader.result));
         if (!Array.isArray(data)) throw new Error("Invalid file");
-        // light validation
-        const normalized = data.map((s) => ({
-          id: s.id || uid("sec"),
-          title: String(s.title || "Untitled"),
-          items: Array.isArray(s.items)
-            ? s.items.map((it) => ({
-                id: it.id || uid("it"),
-                text: String(it.text || ""),
-                done: Boolean(it.done),
-              }))
-            : [],
-        }));
-        setSections(ensureCatSection(normalized));
+        setSections(normalizeList(data));
       } catch {
         alert("Could not import this file.");
       }
@@ -301,16 +274,27 @@ export default function App() {
             />
           </div>
           <div style={styles.toolbar}>
-            <button style={styles.button} onClick={() => setAddingSection(true)}>
+            <button style={styles.button} onClick={openFromPhoneAndLoad}>
+              Open from phone
+            </button>
+            <button style={styles.button} onClick={saveToPhone}>
+              Save to phone
+            </button>
+            
+
+            <button
+              style={styles.button}
+              onClick={() => setAddingSection(true)}
+            >
               + Section
             </button>
-            <button style={{ ...styles.button }} onClick={clearAllChecks}>
+            <button style={styles.button} onClick={clearAllChecks}>
               Clear checks
             </button>
-            <button style={{ ...styles.button }} onClick={resetTemplate}>
+            <button style={styles.button} onClick={resetTemplate}>
               Load template
             </button>
-            <button style={{ ...styles.button }} onClick={exportJSON}>
+            <button style={styles.button} onClick={exportJSON}>
               Export
             </button>
             <label
@@ -328,7 +312,13 @@ export default function App() {
                 style={{ display: "none" }}
                 onChange={(e) => importJSON(e.target.files?.[0])}
               />
-            </label>
+            </label><button
+              style={{ ...styles.button, ...styles.danger }}
+              title="Reset to standard template"
+              onClick={resetAppData}
+            >
+              Reset data
+            </button>
             <button
               style={{ ...styles.button, ...styles.primary }}
               onClick={() => window.print()}
@@ -374,7 +364,6 @@ function InlineAddSection({ onCancel, onAdd }) {
   const [title, setTitle] = useState("");
   const inputRef = useRef(null);
   useEffect(() => inputRef.current?.focus(), []);
-
   return (
     <div
       style={{
@@ -606,12 +595,16 @@ function ItemRow({ item, onToggle, onDelete, onEdit }) {
         </label>
       )}
       <div style={styles.itemActions}>
-        <button title="Edit" style={styles.button} onClick={() => setEditing(true)}>
+        <button
+          title="Edit"
+          style={styles.button}
+          onClick={() => setEditing(true)}
+        >
           Edit
         </button>
         <button
           title="Delete"
-          style={{ ...styles.button, ...{ borderColor: "#fca5a5", color: "#b91c1c" } }}
+          style={{ ...styles.button, borderColor: "#fca5a5", color: "#b91c1c" }}
           onClick={onDelete}
         >
           ✕

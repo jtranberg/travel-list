@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.appintelligence.com.checklist",
+      "sha256_cert_fingerprints": [
+        "AA:BB:CC:...:ZZ"  // <-- your App Signing key SHA-256
+      ]
+    }
+  }
+]
