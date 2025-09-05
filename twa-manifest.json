@@ -14,7 +14,7 @@
   "enableNotifications": true,
   "startUrl": "/",
   "iconUrl": "https://mobile-travel-list.netlify.app/pwa-512x512.png",
-  "maskableIconUrl": "https://mobile-travel-list.netlify.app/maskable-512x512.png",
+  "maskableIconUrl": "https://mobile-travel-list.netlify.app/icons/maskable-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "C:\\Users\\Me\\Desktop\\travelapp\\travel-checklist\\android.keystore",
@@ -35,7 +35,7 @@
   "isMetaQuest": false,
   "fullScopeUrl": "https://mobile-travel-list.netlify.app/",
   "minSdkVersion": 21,
-  "orientation": "portrait",
+  "orientation": "default",
   "fingerprints": [],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
