@@ -20,8 +20,8 @@
     "path": "C:\\Users\\Me\\Desktop\\travelapp\\travel-checklist\\android.keystore",
     "alias": "android"
   },
-  "appVersionName": "1",
-  "appVersionCode": 1,
+  "appVersionName": "My Travel List",
+  "appVersionCode": 3,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://mobile-travel-list.netlify.app/manifest.webmanifest",
@@ -42,5 +42,5 @@
   "protocolHandlers": [],
   "fileHandlers": [],
   "launchHandlerClientMode": "",
-  "appVersion": "1"
+  "appVersion": "My Travel List"
 }

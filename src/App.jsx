@@ -264,7 +264,7 @@ export default function App() {
       <div style={styles.container}>
         <header style={styles.header}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <h1 style={styles.title}>Travel Checklist</h1>
+            <h1 style={styles.title}>Travel Checklist Plus</h1>
             <input
               aria-label="Search items"
               placeholder="Search items…"
